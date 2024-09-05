@@ -7,7 +7,7 @@ from openai import OpenAI
 import translators as ts
 from resemble import Resemble
 
-token = 'KEY'
+token = 'KEY_API'
 bot = telebot.TeleBot(token)
 client = OpenAI(
     api_key='KEY')
