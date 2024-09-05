@@ -6,12 +6,14 @@ import subprocess
 from openai import OpenAI
 import translators as ts
 from resemble import Resemble
+from speechmatics.models import ConnectionSettings
+from speechmatics.batch_client import BatchClient
+from httpx import HTTPStatusError
 
-token = 'api'
+token = 'API_KEY'
 bot = telebot.TeleBot(token)
-client = OpenAI(
-    api_key='api')
-Resemble.api_key('api')
+API_KEY = "API_KEY"
+Resemble.api_key('API_KEY')
 LANG = None
 
 
@@ -44,6 +46,34 @@ def tts(text, lang):
 def translate_to_user_lang(text, source_lang, user_lang):
     result = ts.translate_text(text, translator='bing', from_language=source_lang, to_language=user_lang)
     return result
+
+def stt(file, lang):
+
+    settings = ConnectionSettings(
+        url="https://asr.api.speechmatics.com/v2",
+        auth_token=API_KEY,
+    )
+    conf = {
+        "type": "transcription",
+        "transcription_config": {
+            "language": lang
+        }
+    }
+    with BatchClient(settings) as client:
+        try:
+            job_id = client.submit_job(
+                audio=file,
+                transcription_config=conf,
+            )
+            transcript = client.wait_for_completion(job_id, transcription_format='txt')
+            return transcript
+        except HTTPStatusError as e:
+            if e.response.status_code == 401:
+                return 'Invalid API key - Check your API_KEY at the top of the code!'
+            elif e.response.status_code == 400:
+                return e.response.json()['detail']
+            else:
+                raise e
 
 
 def create_keyboard():
@@ -79,19 +109,23 @@ def get_audio_messages(message):
     with open('tmp/' + fname, 'wb') as f:
         f.write(doc.content)
     subprocess.call(['ffmpeg', '-y', '-i', f'tmp/{fname}', f'tmp/{fname[:-4]}.wav'])
-    with open(f"tmp/{fname[:-4]}.wav", "rb") as audio_file:
-        transcription = client.audio.transcriptions.create(
-            model="whisper-1",
-            file=audio_file,
-            response_format="text")
-    bot.send_message(message.chat.id, text=transcription)
+    #with open(f"tmp/{fname[:-4]}.wav", "rb") as audio_file:
+    #    transcription = client.audio.transcriptions.create(
+    #        model="whisper-1",
+    #        file=audio_file,
+    #        response_format="text")
+    bot.send_message(message.chat.id, text='Странно, почему настолько дольше')
     if LANG == 'ru':
+        transcription = stt(f"tmp/{fname[:-4]}.wav", 'ru')
+        bot.send_message(message.chat.id, text=transcription)
         transcription = translate_to_user_lang(transcription, source_lang='ru', user_lang='zh-Hans')
         a = tts(transcription, lang='zh')
         with open('tmp/output.wav', 'rb') as audio:
             bot.send_audio(message.from_user.id, audio)
             bot.send_message(message.chat.id, transcription)
     elif LANG == 'zh':
+        transcription = stt(f"tmp/{fname[:-4]}.wav", 'cmn')
+        bot.send_message(message.chat.id, text=transcription)
         transcription = translate_to_user_lang(transcription, source_lang='zh-Hans', user_lang='ru')
         a = tts(transcription, lang='ru')
         bot.send_message(message.chat.id, transcription)
