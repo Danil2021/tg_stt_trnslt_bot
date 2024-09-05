@@ -6,10 +6,10 @@ import subprocess
 from openai import OpenAI
 import translators as ts
 
-token = 'API_KEY'
+token = 'API KEY'
 bot = telebot.TeleBot(token)
 client = OpenAI(
-    api_key='API_KEY')
+    api_key='API KEY')
 LANG = None
 
 
@@ -62,6 +62,8 @@ def get_audio_messages(message):
     elif LANG == 'zh':
         transcription = translate_to_user_lang(transcription, source_lang='zh-Hans', user_lang='ru')
         bot.send_message(message.chat.id, transcription)
+    else:
+        bot.send_message(message.chat.id, "Unknown translation")
 
     os.remove(f'tmp/{fname[:-4]}.wav')
     os.remove(f'tmp/{fname}')

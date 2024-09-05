@@ -1,2 +1,4 @@
 from main import bot
-bot.infinity_polling()
+
+if __name__ == '__main__':
+   bot.infinity_polling()
