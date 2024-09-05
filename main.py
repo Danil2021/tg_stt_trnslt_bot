@@ -5,12 +5,38 @@ import os
 import subprocess
 from openai import OpenAI
 import translators as ts
+from resemble import Resemble
 
-token = 'API KEY'
+token = '7089942880:AAHNTQ-QZxNTVppBFqXz84Fkci24-W-d-BA'
 bot = telebot.TeleBot(token)
 client = OpenAI(
-    api_key='API KEY')
+    api_key='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')
+Resemble.api_key('Kl8CSursB9hjnir3gQo8BQtt')
 LANG = None
+
+
+
+def tts(text):
+    project_uuid = Resemble.v2.projects.all(1, 10)['items'][0]['uuid']
+    voice_uuid = Resemble.v2.voices.all(1, 10)['items'][0]['uuid']
+
+    body = text
+    response = Resemble.v2.clips.create_sync(project_uuid,
+                                             voice_uuid,
+                                             body,
+                                             title=None,
+                                             sample_rate=None,
+                                             output_format=None,
+                                             precision=None,
+                                             include_timestamps=None,
+                                             is_archived=None,
+                                             raw=None)
+
+    audio_url = response['item']['audio_src']
+    audio_response = requests.get(audio_url)
+    with open('tmp/output.wav', 'wb') as file:
+        file.write(audio_response.content)
+    return 1
 
 
 def translate_to_user_lang(text, source_lang, user_lang):
@@ -58,10 +84,16 @@ def get_audio_messages(message):
             response_format="text")
     if LANG == 'ru':
         transcription = translate_to_user_lang(transcription, source_lang='ru', user_lang='zh-Hans')
-        bot.send_message(message.chat.id, transcription)
+        a = tts(transcription)
+        with open('tmp/output.wav', 'rb') as audio:
+            bot.send_audio(message.from_user.id, audio)
+        #bot.send_message(message.chat.id, transcription)
     elif LANG == 'zh':
         transcription = translate_to_user_lang(transcription, source_lang='zh-Hans', user_lang='ru')
-        bot.send_message(message.chat.id, transcription)
+        a = tts(transcription)
+        #bot.send_message(message.chat.id, transcription)
+        with open('tmp/output.wav', 'rb') as audio:
+            bot.send_audio(message.from_user.id, audio)
     else:
         bot.send_message(message.chat.id, "Unknown translation")
 
