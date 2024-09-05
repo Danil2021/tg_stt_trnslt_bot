@@ -7,11 +7,11 @@ from openai import OpenAI
 import translators as ts
 from resemble import Resemble
 
-token = '7089942880:AAHNTQ-QZxNTVppBFqXz84Fkci24-W-d-BA'
+token = 'KEY'
 bot = telebot.TeleBot(token)
 client = OpenAI(
-    api_key='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')
-Resemble.api_key('Kl8CSursB9hjnir3gQo8BQtt')
+    api_key='KEY')
+Resemble.api_key('KEY')
 LANG = None
 
 
